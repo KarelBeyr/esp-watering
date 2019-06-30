@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "debugUtils.h"
 #include "wifimodule.h"
 #include "ota.h"
 #include "esp_system.h"
@@ -15,8 +16,8 @@ void setup()
 {
   setupWatchdog(90);
   setupRelay();
-  Serial.begin(115200);
-  setupWifiServer(true);
+  DEBUG_SERIAL_START(115200);
+  setupWifiServer();
   setupOta();
 }
 
@@ -26,7 +27,7 @@ void loop()
 {
   feedWatchdog();
   delay(1000); //otestovat zda se neusmazi
-  maybeServeClient(true);
+  maybeServeClient();
   handleOta();
   counter++;
   if (counter == 600)  //kazdych 10 minut otocime

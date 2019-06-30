@@ -1,6 +1,6 @@
 #ifndef Wifimodule_h
 #define Wifimodule_h
 
-void setupWifiServer(bool logToSerial);
-void maybeServeClient(bool logToSerial);
+void setupWifiServer();
+void maybeServeClient();
 #endif

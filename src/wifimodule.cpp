@@ -1,5 +1,6 @@
 #include <WiFi.h>
 #include <Arduino.h>
+#include "debugUtils.h"
 #include "wifimodule.h"
 #include "thingspeak.h"
 #include "pass.h"
@@ -30,28 +31,24 @@ __TIME__
 
 WiFiServer httpServer(80);
 
-void setupWifiServer(bool logToSerial)
+void setupWifiServer()
 {
-    if (logToSerial)
-    {
-        Serial.println("");
-        Serial.print("Connecting to ");
-        Serial.println(WifiSsid);
-    }
+    DEBUG_PRINTLN("");
+    DEBUG_PRINT("Connecting to ");
+    DEBUG_PRINTLN(WifiSsid);
+
     WiFi.begin(WifiSsid, WifiPassword);
     while (WiFi.status() != WL_CONNECTED)
     {
         delay(500);
-        if (logToSerial)
-            Serial.print(".");
+        DEBUG_PRINT(".");
     }
-    if (logToSerial)
-    {
-        Serial.println("");
-        Serial.println("WiFi connected.");
-        Serial.println("IP address: ");
-        Serial.println(WiFi.localIP());
-    }
+
+    DEBUG_PRINTLN("");
+    DEBUG_PRINTLN("WiFi connected.");
+    DEBUG_PRINTLN("IP address: ");
+    DEBUG_PRINTLN(WiFi.localIP());
+
     httpServer.begin();
     IPAddress ip = WiFi.localIP();
     //logMessageToThingspeak(String(ip[2]) + "." + String(ip[3]));
@@ -69,15 +66,13 @@ String getParameterAfterSlash(String line, int nr)
     return line.substring(idx + 1, endIdx);
 }
 
-void water(int seconds, bool logToSerial)
+void water(int seconds)
 {
-    if (logToSerial)
-        Serial.println("Watering start");
+    DEBUG_PRINTLN("Watering start");
     digitalWrite(2, HIGH);
     delay(seconds * 1000);
     digitalWrite(2, LOW);
-    if (logToSerial)
-        Serial.println("Watering end");
+    DEBUG_PRINTLN("Watering end");
     maybeLogTelemetryToThingspeak(WriteAPIKeyTFA, 30, "0", String(seconds));
 }
 
@@ -87,14 +82,13 @@ void printPageToClient(WiFiClient client, int pageType)
   client.print(str); // the content of the HTTP response follows the header:
 }
 
-void maybeServeClient(bool logToSerial)
+void maybeServeClient()
 {
     bool res = false;
     WiFiClient client = httpServer.available(); // listen for incoming clients
     if (client)
     { // if you get a client,
-        if (logToSerial)
-            Serial.println("New Client.");
+        DEBUG_PRINTLN("New Client.");
         int pageType = 0;
         String currentLine = ""; // make a String to hold incoming data from the client
         while (client.connected())
@@ -104,24 +98,23 @@ void maybeServeClient(bool logToSerial)
                 char c = client.read(); // read a byte, then
                 if (c == '\n')
                 { // if the byte is a newline character
-                    if (logToSerial)
-                        Serial.println(currentLine);
+                    DEBUG_PRINTLN(currentLine);
                     if (currentLine.startsWith("GET "))
                         pageType = 1;
                     if (currentLine.startsWith("POST /water60"))
                     {
                         pageType = 2;
-                        water(60, logToSerial);
+                        water(60);
                     }
                     if (currentLine.startsWith("POST /water30"))
                     {
                         pageType = 2;
-                        water(30, logToSerial);
+                        water(30);
                     }
                     if (currentLine.startsWith("POST /water5"))
                     {
                         pageType = 2;
-                        water(5, logToSerial);
+                        water(5);
                     }
                     if (currentLine.startsWith("GET /reboot"))
                         esp_restart_noos();
@@ -155,9 +148,6 @@ void maybeServeClient(bool logToSerial)
             }
         }
         client.stop(); // close the connection:
-        if (logToSerial)
-        {
-            Serial.println("Client Disconnected.");
-        }
+        DEBUG_PRINTLN("Client Disconnected.");
     }
 }
