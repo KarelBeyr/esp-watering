@@ -2,5 +2,5 @@
 #define Wifimodule_h
 
 void setupWifiServer();
-void maybeServeClient();
+void maybeServeClient(byte pinNumber);
 #endif

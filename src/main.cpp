@@ -6,10 +6,12 @@
 #include "watchdog.h"
 #include <HTTPClient.h>
 
+const byte pinNumber = 2;
+
 void setupRelay()
 {
-  pinMode(2, OUTPUT);
-  digitalWrite(2, LOW);
+  pinMode(pinNumber, OUTPUT);
+  digitalWrite(pinNumber, LOW);
 }
 
 void setup()
@@ -27,7 +29,7 @@ void loop()
 {
   feedWatchdog();
   delay(1000); //otestovat zda se neusmazi
-  maybeServeClient();
+  maybeServeClient(pinNumber);
   handleOta();
   counter++;
   if (counter == 600)  //kazdych 10 minut otocime

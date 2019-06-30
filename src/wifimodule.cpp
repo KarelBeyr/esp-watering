@@ -51,38 +51,20 @@ void setupWifiServer()
 
     httpServer.begin();
     IPAddress ip = WiFi.localIP();
-    //logMessageToThingspeak(String(ip[2]) + "." + String(ip[3]));
     maybeLogTelemetryToThingspeak(WriteAPIKeyTFA, 30, "1", "0");
 }
 
-String getParameterAfterSlash(String line, int nr)
-{
-    int idx = line.indexOf(' ');
-    for (int i = 1; i <= nr; i++)
-    {
-        idx = line.indexOf('/', idx + 1);
-    }
-    int endIdx = line.indexOf('/', idx + 1);
-    return line.substring(idx + 1, endIdx);
-}
-
-void water(int seconds)
+void water(int seconds, byte pinNumber)
 {
     DEBUG_PRINTLN("Watering start");
-    digitalWrite(2, HIGH);
+    digitalWrite(pinNumber, HIGH);
     delay(seconds * 1000);
-    digitalWrite(2, LOW);
+    digitalWrite(pinNumber, LOW);
     DEBUG_PRINTLN("Watering end");
     maybeLogTelemetryToThingspeak(WriteAPIKeyTFA, 30, "0", String(seconds));
 }
 
-void printPageToClient(WiFiClient client, int pageType)
-{
-  String str = webPages[pageType];
-  client.print(str); // the content of the HTTP response follows the header:
-}
-
-void maybeServeClient()
+void maybeServeClient(byte pinNumber)
 {
     bool res = false;
     WiFiClient client = httpServer.available(); // listen for incoming clients
@@ -104,17 +86,17 @@ void maybeServeClient()
                     if (currentLine.startsWith("POST /water60"))
                     {
                         pageType = 2;
-                        water(60);
+                        water(60, pinNumber);
                     }
                     if (currentLine.startsWith("POST /water30"))
                     {
                         pageType = 2;
-                        water(30);
+                        water(30, pinNumber);
                     }
                     if (currentLine.startsWith("POST /water5"))
                     {
                         pageType = 2;
-                        water(5);
+                        water(5, pinNumber);
                     }
                     if (currentLine.startsWith("GET /reboot"))
                         esp_restart_noos();
@@ -131,8 +113,7 @@ void maybeServeClient()
                         client.println("HTTP/1.1 200 OK");        // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
                         client.println("Content-type:text/html"); // and a content-type so the client knows what's coming, then a blank line:
                         client.println();
-                        printPageToClient(client, pageType);
-
+                        client.print(webPages[pageType]); // the content of the HTTP response follows the header:
                         client.println();                 // The HTTP response ends with another blank line:
                         break;                            // break out of the while loop:
                     }
