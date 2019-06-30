@@ -1,0 +1,30 @@
+<script>
+var freq;
+var duty;
+
+function redraw() {
+  var freqRaw = document.getElementById('freqInputId').value;
+  freq = Math.pow(10, Math.floor(freqRaw/2)) * ((freqRaw % 2) * 2 + 1);
+  duty = document.getElementById('dutyInputId').value;
+  document.getElementById('dutySpanId').innerHTML = duty;
+  document.getElementById('freqSpanId').innerHTML = freq.toPrecision(1);
+}
+
+function sendData() {
+  redraw();
+  var url = '/data/' + duty + '/' + freq + '/';
+  console.log(url);
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() { 
+      if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+          pending=false;
+  }
+  xmlHttp.open('PUT', url, true); // true for asynchronous 
+  xmlHttp.send(null);
+}
+</script>
+<input type='range' min='0' max='15' value='currentFreq' oninput='sendData()' onchange='sendData()' id='freqInputId'>Switching frequency: <span id='freqSpanId'>?</span> Hz<br /><br />
+<input type='range' min='0' max='100' value='currentDuty' oninput='sendData()' onchange='sendData()' id='dutyInputId'>Manual duty: <span id='dutySpanId'>?</span>%<br /><br />
+<script>
+  redraw();
+</script>
