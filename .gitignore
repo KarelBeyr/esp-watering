@@ -1,3 +1,4 @@
 .pioenvs/
 .vscode/
 src/pass.h
+.travis.yml

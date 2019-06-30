@@ -7,41 +7,25 @@
 //http://tomeko.net/online_tools/cpp_text_escape.php?lang=en
 const char *webPages[] = {
 "",
-"<script>\n"
-"var freq;\n"
-"var duty;\n"
-"\n"
-"function redraw() {\n"
-"  var freqRaw = document.getElementById('freqInputId').value;\n"
-"  freq = Math.pow(10, Math.floor(freqRaw/2)) * ((freqRaw % 2) * 2 + 1);\n"
-"  duty = document.getElementById('dutyInputId').value;\n"
-"  document.getElementById('dutySpanId').innerHTML = duty;\n"
-"  document.getElementById('freqSpanId').innerHTML = freq.toPrecision(1);\n"
-"}\n"
-"\n"
-"function sendData() {\n"
-"  redraw();\n"
-"  var url = '/data/' + duty + '/' + freq + '/';\n"
-"  console.log(url);\n"
-"  var xmlHttp = new XMLHttpRequest();\n"
-"  xmlHttp.onreadystatechange = function() { \n"
-"      if (xmlHttp.readyState == 4 && xmlHttp.status == 200)\n"
-"          pending=false;\n"
-"  }\n"
-"  xmlHttp.open('PUT', url, true); // true for asynchronous \n"
-"  xmlHttp.send(null);\n"
-"}\n"
-"</script>\n"
-"<input type='range' min='0' max='15' value='currentFreq' oninput='sendData()' onchange='sendData()' id='freqInputId'>Switching frequency: <span id='freqSpanId'>?</span> Hz<br /><br />\n"
-"<input type='range' min='0' max='100' value='currentDuty' oninput='sendData()' onchange='sendData()' id='dutyInputId'>Manual duty: <span id='dutySpanId'>?</span>%<br /><br />\n"
-"<script>\n"
-"  redraw();\n"
-"</script>\n"
-"",
-"Build date: "
+"<!doctype html>\n"
+"<html lang=\"en\">\n"
+"  <head>\n"
+"    <meta charset=\"utf-8\">\n"
+"    <title>Watering control</title>\n"
+"  </head>\n"
+"  <body>\n"
+"    <form action=\"/water5\" method=\"post\"> <input type=\"submit\" value=\"5s\"></form>\n"
+"    <form action=\"/water30\" method=\"post\"> <input type=\"submit\" value=\"30s\"></form>\n"
+"    <form action=\"/water60\" method=\"post\"> <input type=\"submit\" value=\"60s\"></form>\n"
+"    <br />\n"
+"    <p>Built at: \n"
 __DATE__
-" build time: "
+"    @ \n"
 __TIME__
+"    </p>\n"
+"  </body>\n"
+"</html>",
+"Watering finished",
 };
 
 WiFiServer httpServer(80);
@@ -97,19 +81,13 @@ void water(int seconds, bool logToSerial)
     maybeLogTelemetryToThingspeak(WriteAPIKeyTFA, 30, "0", String(seconds));
 }
 
-void printPageToClient(WiFiClient client, int pageType, State *state)
+void printPageToClient(WiFiClient client, int pageType)
 {
   String str = webPages[pageType];
-  if (pageType == 1)
-  {
-    int freqBase = round(log10(state->freq)) * 2 + ((state->freq - 1) % 3) / 2;
-    str.replace("currentFreq", String(freqBase));
-    str.replace("currentDuty", String(state->duty));
-  }
   client.print(str); // the content of the HTTP response follows the header:
 }
 
-void maybeServeClient(bool logToSerial, State *state)
+void maybeServeClient(bool logToSerial)
 {
     bool res = false;
     WiFiClient client = httpServer.available(); // listen for incoming clients
@@ -130,10 +108,21 @@ void maybeServeClient(bool logToSerial, State *state)
                         Serial.println(currentLine);
                     if (currentLine.startsWith("GET "))
                         pageType = 1;
-                    if (currentLine.startsWith("GET /water30"))
+                    if (currentLine.startsWith("POST /water60"))
+                    {
+                        pageType = 2;
+                        water(60, logToSerial);
+                    }
+                    if (currentLine.startsWith("POST /water30"))
+                    {
+                        pageType = 2;
                         water(30, logToSerial);
-                    if (currentLine.startsWith("GET /water5"))
+                    }
+                    if (currentLine.startsWith("POST /water5"))
+                    {
+                        pageType = 2;
                         water(5, logToSerial);
+                    }
                     if (currentLine.startsWith("GET /reboot"))
                         esp_restart_noos();
                     if (currentLine.startsWith("GET /bluescreen"))
@@ -149,7 +138,7 @@ void maybeServeClient(bool logToSerial, State *state)
                         client.println("HTTP/1.1 200 OK");        // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
                         client.println("Content-type:text/html"); // and a content-type so the client knows what's coming, then a blank line:
                         client.println();
-                        printPageToClient(client, pageType, state);
+                        printPageToClient(client, pageType);
 
                         client.println();                 // The HTTP response ends with another blank line:
                         break;                            // break out of the while loop:

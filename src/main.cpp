@@ -1,13 +1,9 @@
 #include <Arduino.h>
-#include "tools.h"
-#include "thingspeak.h"
 #include "wifimodule.h"
 #include "ota.h"
 #include "esp_system.h"
 #include "watchdog.h"
 #include <HTTPClient.h>
-
-State state = State();
 
 void setupRelay()
 {
@@ -17,7 +13,7 @@ void setupRelay()
 
 void setup()
 {
-  setupWatchdog();
+  setupWatchdog(90);
   setupRelay();
   Serial.begin(115200);
   setupWifiServer(true);
@@ -30,7 +26,7 @@ void loop()
 {
   feedWatchdog();
   delay(1000); //otestovat zda se neusmazi
-  maybeServeClient(true, &state);
+  maybeServeClient(true);
   handleOta();
   counter++;
   if (counter == 600)  //kazdych 10 minut otocime
